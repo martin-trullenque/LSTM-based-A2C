@@ -226,7 +226,7 @@ class EnvMove(object):
 
         self.bufferClear()
 
-    def activity(self):  # https://www.ngmn.org/fileadmin/user_upload/NGMN_Radio_Access_Performance_Evaluation_Methodology.pdf
+    def activity(self, timestep):  # https://www.ngmn.org/fileadmin/user_upload/NGMN_Radio_Access_Performance_Evaluation_Methodology.pdf
         # VoLTE uses the VoIP model
         # embb_general uses the video streaming model
         # urllc uses the FTP2 model
@@ -252,8 +252,13 @@ class EnvMove(object):
                     self.UE_buffer[:, ue_id]) != 0:  # The buffer is not full
                 buf_ind = np.where(self.UE_buffer[:, ue_id] == 0)[0][0]
                 if self.UE_cat[ue_id] == 'volte':
-                    self.UE_buffer[buf_ind, ue_id] = 40 * 8
-                    self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
+                    if timestep < 4000:
+                        self.UE_buffer[buf_ind, ue_id] = 40 * 8
+                        self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
+                    else:
+                        self.UE_buffer[buf_ind, ue_id] = 120 * 8
+                        self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
+                       
                 elif self.UE_cat[ue_id] == 'embb_general':
                     tmp_buffer_size = np.random.pareto(1.2, 1) * 800
                     if tmp_buffer_size > 2000:

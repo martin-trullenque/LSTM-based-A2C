@@ -48,7 +48,7 @@ buffer_ob = []
 for i in range(LSTM_LEN):
     env.countReset()
     env.user_move()
-    env.activity()
+    env.activity(i)
 
     action = np.random.choice(n_actions)
     env.band_ser_cat = action_space[action]
@@ -57,7 +57,7 @@ for i in range(LSTM_LEN):
         env.scheduling()
         env.provisioning()
         if i_subframe < LEARNING_WINDOW - 1:
-            env.activity()
+            env.activity(i)
 
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
@@ -66,17 +66,17 @@ for i in range(LSTM_LEN):
 for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
-    env.activity()
+    env.activity(i_iter)
 
     s = np.vstack(buffer_ob)
-    action = model.choose_action(s)
+    action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
 
     for i_subframe in range(LEARNING_WINDOW):
         env.scheduling()
         env.provisioning()
         if i_subframe < LEARNING_WINDOW - 1:
-            env.activity()
+            env.activity(i_iter)
 
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
@@ -107,12 +107,15 @@ for i_iter in range(MAX_ITERATIONS):
 
     model.learn(feed_dict)
 
-    if (i_iter + 1) % 500 == 0:
+    if (i_iter + 1) % 5 == 0:
         with open(LOG_TRAIN, 'a+') as f:
             for i in range(len(se_lst)):
                 print(
                     'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
                         reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
-
+            print(
+                'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                    observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+            np.savetxt(f, probab)  
         qoe_lst, se_lst = [], []
         reward_lst = []
