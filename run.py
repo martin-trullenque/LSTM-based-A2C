@@ -113,5 +113,6 @@ for i_iter in range(MAX_ITERATIONS):
                 print(
                     'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
                         reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+
         qoe_lst, se_lst = [], []
         reward_lst = []
