@@ -107,7 +107,7 @@ for i_iter in range(MAX_ITERATIONS):
 
     model.learn(feed_dict)
 
-    if (i_iter + 1) % 5 == 0:
+    if (i_iter + 1) % 1 == 0:
         with open(LOG_TRAIN, 'a+') as f:
             for i in range(len(se_lst)):
                 print(
