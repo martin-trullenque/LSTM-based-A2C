@@ -260,7 +260,7 @@ class EnvMove(object):
                         self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                        
                 elif self.UE_cat[ue_id] == 'embb_general':
-                    if timestep < 4000
+                    if timestep < 4000:
                         tmp_buffer_size = np.random.pareto(1.2, 1) * 800
                         if tmp_buffer_size > 2000:
                             tmp_buffer_size = 2000
