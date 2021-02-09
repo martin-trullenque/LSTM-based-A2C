@@ -25,8 +25,10 @@ ENTROY_BETA = 0.001
 LSTM_LEN = 10
 MAX_ITERATIONS = 10000
 
-LOG_TRAIN = './logs/a2clstm.txt'
-# LOG_TRAIN = './logs/a2c.txt'
+LOG_TRAIN_1 = './logs/a2clstm_1.txt'
+LOG_TRAIN_2 = './logs/a2clstm_2.txt'
+LOG_TRAIN_3 = './logs/a2clstm_3.txt'
+LOG_TRAIN_4 = './logs/a2clstm_4.txt'
 
 action_space = utils.action_space(int(BAND_WHOLE // BAND_PER), len(SER_CAT)) * BAND_PER * 10 ** 6
 n_actions = len(action_space)
@@ -66,7 +68,9 @@ for i in range(LSTM_LEN):
 for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
+    #print('new_movement')
     env.activity(i_iter)
+    #print('end_movement')
 
     s = np.vstack(buffer_ob)
     action, probab = model.choose_action(s)
@@ -77,7 +81,7 @@ for i_iter in range(MAX_ITERATIONS):
         env.provisioning()
         if i_subframe < LEARNING_WINDOW - 1:
             env.activity(i_iter)
-
+    env.activity(i_iter)
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
     buffer_ob.pop(0)
@@ -108,14 +112,59 @@ for i_iter in range(MAX_ITERATIONS):
     model.learn(feed_dict)
 
     if (i_iter + 1) % 1 == 0:
-        with open(LOG_TRAIN, 'a+') as f:
-            for i in range(len(se_lst)):
+        if i_iter < 3200:
+            with open(LOG_TRAIN_1, 'a+') as f:
+                #for i in range(len(se_lst)):
+                #    print(
+                #        'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
+                #            reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
                 print(
-                    'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
-                        reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
-            print(
-                'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
-                    observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
-            np.savetxt(f, probab)  
-        qoe_lst, se_lst = [], []
-        reward_lst = []
+                    'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                        observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+                np.savetxt(f, probab)
+
+            qoe_lst, se_lst = [], []
+            reward_lst = []
+
+        elif i_iter > 3201 and i_iter < 6400:
+            with open(LOG_TRAIN_2, 'a+') as f:
+                #for i in range(len(se_lst)):
+                #    print(
+                #        'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
+                #            reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+                print(
+                    'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                        observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+                np.savetxt(f, probab)
+
+            qoe_lst, se_lst = [], []
+            reward_lst = []
+
+        elif i_iter > 6401 and i_iter < 9600:
+            with open(LOG_TRAIN_3, 'a+') as f:
+                #for i in range(len(se_lst)):
+                #    print(
+                #        'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
+                #            reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+                print(
+                    'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                        observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+                np.savetxt(f, probab)
+
+            qoe_lst, se_lst = [], []
+            reward_lst = []
+
+        elif i_iter > 9601:
+            with open(LOG_TRAIN_3, 'a+') as f:
+                #for i in range(len(se_lst)):
+                #    print(
+                #        'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
+                #            reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+                print(
+                    'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                        observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+                np.savetxt(f, probab)
+
+            qoe_lst, se_lst = [], []
+            reward_lst = []
+

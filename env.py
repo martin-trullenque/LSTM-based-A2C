@@ -230,6 +230,8 @@ class EnvMove(object):
         # VoLTE uses the VoIP model
         # embb_general uses the video streaming model
         # urllc uses the FTP2 model
+        #print('New call')
+        #print(timestep)
         if self.sys_clock == 0:
             for ser_name in self.ser_cat:
                 ue_index = np.where((self.UE_cat == ser_name) & (self.UE_cell == 1))
@@ -241,11 +243,14 @@ class EnvMove(object):
                     tmp_readtime[tmp_readtime > 12.5 * 10 ** -3] = 12.5 * 10 ** -3
                     self.UE_readtime[ue_index] = tmp_readtime
                 elif ser_name == 'urllc':
-                    self.UE_readtime[ue_index] = np.random.exponential(180 * 10 ** -3, [1, ue_index_Size])  # read time is determines much smaller; the spec shows the average time is 180s, but here it is defined as 180 ms
-
+                      # read time is determines much smaller; the spec shows the average time is 180s, but here it is defined as 180 ms
+                    if timestep < 4000:
+                        self.UE_readtime[ue_index] = np.random.exponential(180 * 10 ** -3, [1, ue_index_Size])
+                    else:
+                        self.UE_readtime[ue_index] = np.random.exponential(140 * 10 ** -3, [1, ue_index_Size])
         ##----------------------------------------------------------------
         UE_index_readtime = np.where(self.UE_readtime <= 0)[0].tolist()
-
+        #print(len(UE_index_readtime))
         for ue_id in UE_index_readtime:
         ##---------------------------------------------------------------##
             if self.UE_buffer[:, ue_id].size - np.count_nonzero(
@@ -256,7 +261,7 @@ class EnvMove(object):
                         self.UE_buffer[buf_ind, ue_id] = 40 * 8
                         self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                     else:
-                        self.UE_buffer[buf_ind, ue_id] = 120 * 8
+                        self.UE_buffer[buf_ind, ue_id] = 40 * 8
                         self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                        
                 elif self.UE_cat[ue_id] == 'embb_general':
@@ -270,38 +275,54 @@ class EnvMove(object):
                         if self.UE_readtime[ue_id] > 12.5 * 10 ** -3:
                             self.UE_readtime[ue_id] = 12.5 * 10 ** -3
                     else:
-                        tmp_buffer_size = np.random.pareto(2, 1) * 800
+                        tmp_buffer_size = np.random.pareto(1.2, 1) * 800
                         if tmp_buffer_size > 2000:
                             tmp_buffer_size = 2000
                         # tmp_buffer_size = np.random.choice([1*8*10**6, 2*8*10**6, 3*8*10**6, 4*8*10**6, 5*8*10**6])
                         self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
-                        self.UE_readtime[ue_id] = np.random.pareto(2, [1, 1]) * 6 * 10 ** -3
+                        self.UE_readtime[ue_id] = np.random.pareto(1.2, [1, 1]) * 6 * 10 ** -3
                         if self.UE_readtime[ue_id] > 12.5 * 10 ** -3:
                             self.UE_readtime[ue_id] = 12.5 * 10 ** -3
                 elif self.UE_cat[ue_id] == 'urllc':
-                    # tmp_buffer_size = np.random.lognormal(14.45,0.35,[1,1])
-                    # if tmp_buffer_size > 5 * 10 **6:
-                    #      tmp_buffer_size > 5 * 10 **6
-                    # tmp_buffer_size = np.random.choice([6.4*8*10**3, 12.8*8*10**3, 19.2*8*10**3, 25.6*8*10**3, 32*8*10**3])
-                    tmp_buffer_size = np.random.choice([0.3 * 8 * 10 ** 6])
-                    # tmp_buffer_size = np.random.choice(
-                    #     [0.3 * 8 * 10 ** 6, 0.4 * 8 * 10 ** 6, 0.5 * 8 * 10 ** 6, 0.6 * 8 * 10 ** 6,
-                    #      0.7 * 8 * 10 ** 6])
-                    self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
-                    self.UE_readtime[ue_id] = np.random.exponential(180 * 10 ** -3, [1, 1])  # read time is determines much smaller; the spec shows the average time is 180s, but here it is defined as 180 ms
+                    if timestep < 4000:
+                        # tmp_buffer_size = np.random.lognormal(14.45,0.35,[1,1])
+                        # if tmp_buffer_size > 5 * 10 **6:
+                        #      tmp_buffer_size > 5 * 10 **6
+                        # tmp_buffer_size = np.random.choice([6.4*8*10**3, 12.8*8*10**3, 19.2*8*10**3, 25.6*8*10**3, 32*8*10**3])
+                        tmp_buffer_size = np.random.choice([0.3 * 8 * 10 ** 6])
+                        # tmp_buffer_size = np.random.choice(
+                        #     [0.3 * 8 * 10 ** 6, 0.4 * 8 * 10 ** 6, 0.5 * 8 * 10 ** 6, 0.6 * 8 * 10 ** 6,
+                        #      0.7 * 8 * 10 ** 6])
+                        self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
+                        self.UE_readtime[ue_id] = np.random.exponential(180 * 10 ** -3, [1, 1])  # read time is determines much smaller; the spec shows the average time is 180s, but here it is defined as 180 ms
+                    else:
+                        # tmp_buffer_size = np.random.lognormal(14.45,0.35,[1,1])
+                        # if tmp_buffer_size > 5 * 10 **6:
+                        #      tmp_buffer_size > 5 * 10 **6
+                        # tmp_buffer_size = np.random.choice([6.4*8*10**3, 12.8*8*10**3, 19.2*8*10**3, 25.6*8*10**3, 32*8*10**3])
+                        tmp_buffer_size = np.random.choice([0.4 * 8 * 10 ** 6])
+                        # tmp_buffer_size = np.random.choice(
+                        #     [0.3 * 8 * 10 ** 6, 0.4 * 8 * 10 ** 6, 0.5 * 8 * 10 ** 6, 0.6 * 8 * 10 ** 6,
+                        #      0.7 * 8 * 10 ** 6])
+                        self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
+                        self.UE_readtime[ue_id] = np.random.exponential(140 * 10 ** -3, [1, 1])  # read time is determines much smaller; the spec shows the average time is 180s, but here it is defined as 180 ms
 
                 self.UE_buffer_backup[buf_ind, ue_id] = self.UE_buffer[buf_ind, ue_id]
 
                 ##---------------------------------------------------------------
                 self.tx_pkt_no[self.ser_cat.index(self.UE_cat[ue_id])] += 1
-
+                #print(ue_id)
+                #print(self.tx_pkt_no[self.ser_cat.index(self.UE_cat[ue_id])])
             else:
                 if self.UE_cat[ue_id] == 'volte':
                     self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                 elif self.UE_cat[ue_id] == 'embb_general':
                     self.UE_readtime[ue_id] = np.random.pareto(1.2, [1, 1]) * 6 * 10 ** -3
                 else:
-                    self.UE_readtime[ue_id] = np.random.exponential(180 * 10 ** -3, [1, 1])
+                    if timestep < 4000:
+                        self.UE_readtime[ue_id] = np.random.exponential(180 * 10 ** -3, [1, 1])
+                    else:
+                        self.UE_readtime[ue_id] = np.random.exponential(140 * 10 ** -3, [1, 1])
 
                 self.drop_pkt_no[self.ser_cat.index(self.UE_cat[ue_id])] += 1
 
