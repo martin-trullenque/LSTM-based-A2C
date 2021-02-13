@@ -111,6 +111,11 @@ for i_iter in range(MAX_ITERATIONS):
     }
 
     model.learn(feed_dict)
+    print("New actions: ",  env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2])
+
+    if(i_iter == 1):
+        with open('action_space_pickup.txt', 'a+') as filename:
+            np.savetxt(filename, action_space)    
 
     if (i_iter + 1) % 5 == 0:
         with open(LOG_TRAIN, 'a+') as f:

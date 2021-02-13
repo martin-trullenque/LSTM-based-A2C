@@ -9,9 +9,9 @@ class A2CLSTM(object):
             sess,
             n_actions,
             n_features,
-            lr_a=0.001,
-            lr_c=0.01,
-            entropy_beta=0.01
+            lr_a=0.005,
+            lr_c=0.008,
+            entropy_beta=0.001
     ):
         self.sess = sess
         self.n_actions = n_actions
