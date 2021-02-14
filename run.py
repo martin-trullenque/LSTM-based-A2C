@@ -68,7 +68,7 @@ for i_iter in range(MAX_ITERATIONS):
     env.user_move()
     env.activity()
     if i_iter == 4000:
-        env.ser_prob = np.array([0.5, 0.5, 0.5], dtype = np.float32)
+        env.ser_prob = np.array([0.49, 0.5, 0.01], dtype = np.float32)
         env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
         env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
         env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
