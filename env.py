@@ -24,7 +24,7 @@ class EnvMove(object):
                  ser_cat=['volte', 'embb_general', 'urllc'],
                  band_whole=10 * 10 ** 6,  # 10MHz
                  schedu_method='round_robin',
-                 ser_prob=np.array([6, 6, 1], dtype=np.float32),
+                 ser_prob=np.array([3, 3, 4], dtype=np.float32),
                  dl_mimo=32,
                  rx_gain=20,  # dB
                  learning_windows=60000,
