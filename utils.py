@@ -32,8 +32,8 @@ def gen_state(pkt_nums):
 
 
 def calc__reward(qoe, se):
-    qoe_weight = [1, 1, 1]
-    se_weight = 0.01
+    qoe_weight = [10, 10, 10]
+    se_weight = 0.0001
     uility = sum([w * q for w, q in zip(qoe_weight, qoe.tolist())]) + se_weight * se
     if qoe[1] >= 0.98 and qoe[0] >= 0.98:
         if qoe[2] >= 0.95:
@@ -45,6 +45,6 @@ def calc__reward(qoe, se):
             reward = (qoe[2] - 0.7) * 10
     else:
         reward = -5
-
+    reward = uility
     return uility, reward
 

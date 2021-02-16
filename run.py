@@ -23,7 +23,7 @@ LR_C = 0.01
 GAMMA = 0
 ENTROY_BETA = 0.001
 LSTM_LEN = 10
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 12000
 
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
@@ -67,7 +67,7 @@ for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
     env.activity()
-    if i_iter == 4000:
+    if i_iter == 6000:
         env.ser_prob = np.array([0.2, 0.2, 0.6], dtype = np.float32)
         env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
         env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
