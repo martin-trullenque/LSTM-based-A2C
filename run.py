@@ -30,8 +30,6 @@ LOG_TRAIN = './logs/a2clstm.txt'
 
 action_space = utils.action_space(int(BAND_WHOLE // BAND_PER), len(SER_CAT)) * BAND_PER * 10 ** 6
 n_actions = len(action_space)
-print(n_actions)
-
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
@@ -71,12 +69,14 @@ for i_iter in range(MAX_ITERATIONS):
     s = np.vstack(buffer_ob)
     action = model.choose_action(s)
     env.band_ser_cat = action_space[action]
-
+    
     for i_subframe in range(LEARNING_WINDOW):
         env.scheduling()
         env.provisioning()
+        print(env.sys_clock)
         if i_subframe < LEARNING_WINDOW - 1:
             env.activity()
+        
 
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)

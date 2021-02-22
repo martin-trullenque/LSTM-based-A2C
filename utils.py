@@ -5,6 +5,7 @@ import numpy as np
 
 
 def action_space(total, ser_num):
+    print(total)
     tmp = list(itertools.product(range(total + 1), repeat=ser_num))
     result = []
     for value in tmp:
@@ -13,7 +14,6 @@ def action_space(total, ser_num):
     result = np.array(result)
     [i, j] = np.where(result == 0)
     result = np.delete(result, i, axis=0)
-    print(result.shape)
     return result
 
 

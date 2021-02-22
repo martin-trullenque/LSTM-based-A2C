@@ -64,7 +64,7 @@ class EnvMove(object):
         ##--------------------------------------------------------------------------
         self.UE_pos = np.random.uniform(-3 * self.BS_radius, 3 * self.BS_radius, [self.UE_max_no, 2])
         self.UE_cell = np.zeros(self.UE_max_no)
-        self.UE_cell[np.where(np.sum(self.UE_pos ** 2, axis=1) <= self.BS_radius ** 2)] = 1
+        self.UE_cell[np.where(np.sum(self.UE_pos ** 2, axis=1) <= self.BS_radius ** 2)] = 1 # self.UEcell considers the users that remain within the cell
         self.UE_speed = np.zeros(UE_max_no)
         self.UE_speed[np.where(self.UE_cat == 'volte')] = 1
         self.UE_speed[np.where(self.UE_cat == 'embb_general')] = 4
@@ -136,25 +136,36 @@ class EnvMove(object):
 
     def scheduling(self):
         # 调度模型
-        self.UE_band = np.zeros(self.UE_max_no)  # initializing
+        self.UE_band = np.zeros(self.UE_max_no)  # initializing to zeros to all users, as haven't done the scheduling yet
         if self.schedu_method == 'round_robin':
+            print("Calling the scheduling")
+            print(self.sys_clock)
             ser_cat = len(self.ser_cat)
-            band_ser_cat = self.band_ser_cat
-            if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000):
+            band_ser_cat = self.band_ser_cat #band ser cat picks the amount of bandwidth given to each slice (i.e., the action modified in the main program every second
+
+            if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000): #To sum up with this horrible line of code: if this is the first scheduling we do the line below
                 self.ser_schedu_ind = [0] * ser_cat
-
+                print("this is a test")
             for i in range(ser_cat):
-
+                #For each user I look whether it is within the cell. And, it must not have an empty queue. And it is inside a for to check all users categories, hopefully to consider different SLA's parameters
                 ##-----------------------------------------------------------------
                 UE_index = np.where((self.UE_cell == 1) &
                                     (self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))[0]
                 ##---------------------------------------------------------------##
 
-                UE_Active_No = len(UE_index)
+                UE_Active_No = len(UE_index) #Number of active users for a given category
+                print("Number of active users")
+                print(UE_Active_No)
+                
+
                 if UE_Active_No != 0:
-                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)
+                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)#Each user has an equal distribution of the PRB per slice. TODO: Review why do I have this 180.000
                     RB_round = RB_No // UE_Active_No
-                    self.UE_band[UE_index] += 180 * 10 ** 3 * RB_round
+                    print("The number of PRB is")
+                    print(RB_No)
+                    print("The number of PRB per user is")
+                    print(RB_round)
+                    self.UE_band[UE_index] += 180 * 10 ** 3 * RB_round #Here I store the PRB a given user had
 
                     RB_rem_no = int(RB_No - RB_round * UE_Active_No)
                     left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
@@ -226,14 +237,21 @@ class EnvMove(object):
 
         self.bufferClear()
 
+    #The idea of this function is that at the beginning of each frame, we consider the users within the cell. It is convenient to keep in mind that the readtime is the inter arrival packet time
     def activity(self):  # https://www.ngmn.org/fileadmin/user_upload/NGMN_Radio_Access_Performance_Evaluation_Methodology.pdf
         # VoLTE uses the VoIP model
         # embb_general uses the video streaming model
         # urllc uses the FTP2 model
-        if self.sys_clock == 0:
+        if self.sys_clock == 0: #env.sys considers in which moment are we in the frame, it has 2000 different possible values, as many "slots" as we have in the second frame.     
+            #If we have a new frame coming in, we change this and set it back to normal
             for ser_name in self.ser_cat:
                 ue_index = np.where((self.UE_cat == ser_name) & (self.UE_cell == 1))
                 ue_index_Size = ue_index[0].size
+                #print("Number of transmitters from each slice")
+                #print(ue_index_Size)
+                #print("Users to transmit")
+                #print(ue_index)
+
                 if ser_name == 'volte':
                     self.UE_readtime[ue_index] = np.random.uniform(0, 160 * 10 ** (-3), [1, ue_index_Size])  # the silence lasts 160 ms in maximum
                 elif ser_name == 'embb_general':
@@ -245,7 +263,12 @@ class EnvMove(object):
 
         ##----------------------------------------------------------------
         UE_index_readtime = np.where(self.UE_readtime <= 0)[0].tolist()
+        #print("Print readtime")
+        #print(UE_index_readtime)
 
+        #print("Let's see what is in here")
+        #print(len(UE_index_readtime))
+        #READTIME is the inter packet arrival time. That is to say, the processing time. The idea of the line of code is than, whenever a user has run out of read_time, is means that it has another packet to process, this is why we add the Bytes!
         for ue_id in UE_index_readtime:
         ##---------------------------------------------------------------##
             if self.UE_buffer[:, ue_id].size - np.count_nonzero(
@@ -290,7 +313,7 @@ class EnvMove(object):
 
                 self.drop_pkt_no[self.ser_cat.index(self.UE_cat[ue_id])] += 1
 
-        self.UE_readtime[np.where(self.UE_cell == 1)] -= self.time_subframe
+        self.UE_readtime[np.where(self.UE_cell == 1)] -= self.time_subframe #Here we subtract the reading time to the frame 
         ##---------------------------------------------------------------------##
 
         self.sys_clock += self.time_subframe
