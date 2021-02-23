@@ -11,7 +11,7 @@ import utils
 # QoE_WEIGHT = [1, 1, 1]
 # SE_WEIGHT = 0.01
 UE_NUMS = 1200
-SER_PROB = [1, 0, 3]
+SER_PROB = [1, 2, 3]
 LEARNING_WINDOW = 2000
 BAND_WHOLE = 10  # M
 BAND_PER = 0.2  # M
