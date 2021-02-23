@@ -11,7 +11,7 @@ import utils
 # QoE_WEIGHT = [1, 1, 1]
 # SE_WEIGHT = 0.01
 UE_NUMS = 1200
-SER_PROB = [1, 2, 3]
+SER_PROB = [1, 0, 3]
 LEARNING_WINDOW = 2000
 BAND_WHOLE = 10  # M
 BAND_PER = 0.2  # M
@@ -28,7 +28,7 @@ MAX_ITERATIONS = 10000
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
 
-action_space = utils.action_space(int(BAND_WHOLE // BAND_PER), len(SER_CAT)) * BAND_PER * 10 ** 6
+action_space = utils.action_space(int(BAND_WHOLE // BAND_PER), len(SER_CAT)) * BAND_PER * 10 ** 6 #The result of this division is 49. I am not able to understand it yet, just assuming that is a safety parameter and this is given by the floating point problem.  
 n_actions = len(action_space)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
@@ -42,21 +42,26 @@ qoe_lst, se_lst = [], []
 reward_lst = []
 
 buffer_ob = []
-
+rate_accum = []
+rate_accum = np.array(rate_accum)
+rates = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) #I've set it as ones as the rate can be 0
+stats = np.zeros(UE_NUMS, dtype = np.float32)
 for i in range(LSTM_LEN):
     env.countReset()
     env.user_move()
     env.activity()
-
+    #print(i)
     action = np.random.choice(n_actions)
     env.band_ser_cat = action_space[action]
-
+    
     for i_subframe in range(LEARNING_WINDOW):
         env.scheduling()
         env.provisioning()
         if i_subframe < LEARNING_WINDOW - 1:
             env.activity()
-
+    stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
+    stats[np.where((env.UE_cat == 'embb') & (env.UE_cell == 1))] = 2
+    stats[np.where((env.UE_cat == 'urllc') & (env.UE_cell == 1))] = 3
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
     buffer_ob.append(observe)
@@ -67,16 +72,28 @@ for i_iter in range(MAX_ITERATIONS):
     env.activity()
 
     s = np.vstack(buffer_ob)
-    action = model.choose_action(s)
+    action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
-    
-    for i_subframe in range(LEARNING_WINDOW):
-        env.scheduling()
-        env.provisioning()
-        print(env.sys_clock)
-        if i_subframe < LEARNING_WINDOW - 1:
-            env.activity()
-        
+    if i_iter == 6000:
+        stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
+        stats[np.where((env.UE_cat == 'embb') & (env.UE_cell == 1))] = 2
+        stats[np.where((env.UE_cat == 'urllc') & (env.UE_cell == 1))] = 3
+
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            rate = env.provisioning()
+            rates[:,i_subframe] = rate
+            # print(env.sys_clock)
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
+        np.savetxt('cosa.txt', rates)
+        np.savetxt('code.txt', stats)        
+    else:
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            env.provisioning()
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
 
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
@@ -106,12 +123,18 @@ for i_iter in range(MAX_ITERATIONS):
     }
 
     model.learn(feed_dict)
+    print("Resources assigned")
+    print(env.band_ser_cat)
 
-    if (i_iter + 1) % 500 == 0:
+    if (i_iter + 1) % 1 == 0:
         with open(LOG_TRAIN, 'a+') as f:
             for i in range(len(se_lst)):
                 print(
                     'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
                         reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+            print(
+                'State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (
+                    observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+            np.savetxt(f, probab)
         qoe_lst, se_lst = [], []
         reward_lst = []

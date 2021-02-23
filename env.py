@@ -138,14 +138,14 @@ class EnvMove(object):
         # 调度模型
         self.UE_band = np.zeros(self.UE_max_no)  # initializing to zeros to all users, as haven't done the scheduling yet
         if self.schedu_method == 'round_robin':
-            print("Calling the scheduling")
-            print(self.sys_clock)
+            #print("Calling the scheduling")
+            #print(self.sys_clock)
             ser_cat = len(self.ser_cat)
             band_ser_cat = self.band_ser_cat #band ser cat picks the amount of bandwidth given to each slice (i.e., the action modified in the main program every second
-
+            RB_total = 0
             if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000): #To sum up with this horrible line of code: if this is the first scheduling we do the line below
-                self.ser_schedu_ind = [0] * ser_cat
-                print("this is a test")
+                self.ser_schedu_ind = [0] * ser_cat #This line of code creates an array of zeros of size ser_cat (3)
+                #print("this is a test")
             for i in range(ser_cat):
                 #For each user I look whether it is within the cell. And, it must not have an empty queue. And it is inside a for to check all users categories, hopefully to consider different SLA's parameters
                 ##-----------------------------------------------------------------
@@ -154,21 +154,31 @@ class EnvMove(object):
                 ##---------------------------------------------------------------##
 
                 UE_Active_No = len(UE_index) #Number of active users for a given category
-                print("Number of active users")
-                print(UE_Active_No)
+
+                #print(self.ser_cat[i])
+                #print("Number of active users")
+                #print(UE_Active_No) #TODO: run a simulation with 0 users
                 
 
                 if UE_Active_No != 0:
-                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)#Each user has an equal distribution of the PRB per slice. TODO: Review why do I have this 180.000
+                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)#Each user has an equal distribution of the PRB per slice. TODO: Review why do I have this 180.000. More than plausible hypothesis: overhead.
+                    RB_total += RB_No
                     RB_round = RB_No // UE_Active_No
-                    print("The number of PRB is")
-                    print(RB_No)
-                    print("The number of PRB per user is")
-                    print(RB_round)
+                    #print("The number of PRB is")
+                    #print(RB_No)
+                    #print("The number of PRB per user is")
+                    #print(RB_round)
                     self.UE_band[UE_index] += 180 * 10 ** 3 * RB_round #Here I store the PRB a given user had
 
-                    RB_rem_no = int(RB_No - RB_round * UE_Active_No)
+                    RB_rem_no = int(RB_No - RB_round * UE_Active_No) #This is to consider the possibility of having 47 RB to allocate between 4 users. This would make the RB rem_no equals to 3.
+                    #From here onwards is to review (and prepare a simulation/ppt) 
                     left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
+                    #print("Number of left packets")
+                    #print(left_no)
+                    #print(UE_index)
+                    #print(i)
+                    #print(self.ser_schedu_ind)
+                    #Well, the summary of this implementation is that we are doing the roun robin algorithm inside. Left No stores an indicator of how to share the remaining RB within the remaining users. At the first iteration, this will be 0. I.e., all the users will be candidates to get a spare RB. The policiy is that at the beginning, the ones with a lower ue_id will get it, but we will keep a token of who was the last user taking one, to only consider these users from there on for the next iteration. There is a weak point wrt this. THIS IS NOT CIRCULAR. The else is circular    
                     if left_no >= RB_rem_no:
                         UE_act_index = UE_index[np.where(np.greater_equal(UE_index, self.ser_schedu_ind[i]))]
                         UE_act_index = UE_act_index[:RB_rem_no]
@@ -180,6 +190,7 @@ class EnvMove(object):
                         UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
                         self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
                         self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
+            #print(RB_total)
         elif self.schedu_method == 'round_robin_nons':
             band_whole = self.band_whole
             if self.sys_clock == self.time_subframe:
@@ -193,7 +204,7 @@ class EnvMove(object):
 
                 self.UE_band[UE_index] += 180 * 10 ** 3 * RB_round
 
-                RB_rem_no = RB_No % UE_Active_No
+                RB_rem_no = RB_No % UE_Active_No  
                 left_no = np.where(UE_index > self.ser_schedu_ind)[0].size
                 if left_no >= RB_rem_no:
                     UE_act_index = UE_index[np.where(np.logical_and(np.greater_equal(UE_index, self.ser_schedu_ind),
@@ -219,13 +230,13 @@ class EnvMove(object):
                         self.band_ser_cat[i] = self.band_ser_cat[i] / lw
 
     def provisioning(self):
-        UE_index = np.where(self.UE_band != 0)
+        UE_index = np.where(self.UE_band != 0) #Here we fix the user bands where we have allocated BW
         self.channel_model()
         rx_power = 10 ** ((self.BS_tx_power - self.chan_loss + self.UE_rx_gain) / 10)
         rx_power = rx_power.reshape(1, -1)[0]
         rate = np.zeros(self.UE_max_no)
         rate[UE_index] = self.UE_band[UE_index] * np.log10(
-            1 + rx_power[UE_index] / (10 ** (self.noise_PSD / 10) * self.UE_band[UE_index])) * self.dl_mimo
+            1 + rx_power[UE_index] / (10 ** (self.noise_PSD / 10) * self.UE_band[UE_index])) * self.dl_mimo #Shannon capacity theorem for rate allocation
 
         ##----------------------------------------------------------------------------------------------------
         self.UE_latency[np.where(self.UE_buffer != 0)] += self.time_subframe
@@ -236,6 +247,7 @@ class EnvMove(object):
         self.store_reward(rate)
 
         self.bufferClear()
+        return rate
 
     #The idea of this function is that at the beginning of each frame, we consider the users within the cell. It is convenient to keep in mind that the readtime is the inter arrival packet time
     def activity(self):  # https://www.ngmn.org/fileadmin/user_upload/NGMN_Radio_Access_Performance_Evaluation_Methodology.pdf
@@ -249,9 +261,11 @@ class EnvMove(object):
                 ue_index_Size = ue_index[0].size
                 #print("Number of transmitters from each slice")
                 #print(ue_index_Size)
+                
                 #print("Users to transmit")
+                #print(ser_name)
                 #print(ue_index)
-
+                
                 if ser_name == 'volte':
                     self.UE_readtime[ue_index] = np.random.uniform(0, 160 * 10 ** (-3), [1, ue_index_Size])  # the silence lasts 160 ms in maximum
                 elif ser_name == 'embb_general':
@@ -391,7 +405,7 @@ class EnvMove(object):
         qoe = self.succ_tx_pkt_no / (self.tx_pkt_no + self.drop_pkt_no)
         return qoe, se_total
 
-
+# I'm goin to assume that this works as expected and it tidies up the buffer such as it makes a replacement on the positions of the sent packets. It is done just right after the provisioning
     def bufferClear(self):
         latency = np.sum(self.UE_latency, axis=0)
         UE_index = np.where(latency != 0)
@@ -434,12 +448,12 @@ class EnvMove(object):
         self.UE_buffer_backup = np.zeros(self.UE_buffer.shape)
         self.UE_latency = np.zeros(self.UE_buffer.shape)
 
-
+#This is what we do when after computing hte rate through Shannon capacity formula
 def bufferUpdate(buffer, rate, time_subframe):
     bSize = buffer.size
     for i in range(bSize):
         if buffer[i] >= rate * time_subframe:
-            buffer[i] -= rate * time_subframe
+            buffer[i] -= rate * time_subframe #This is very subtile with the definition of 
             rate = 0
             break
         else:
