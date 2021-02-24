@@ -46,6 +46,7 @@ rate_accum = []
 rate_accum = np.array(rate_accum)
 rates = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) #I've set it as ones as the rate can be 0
 stats = np.zeros(UE_NUMS, dtype = np.float32)
+print(np.where(env.UE_cat == 'volte'))
 for i in range(LSTM_LEN):
     env.countReset()
     env.user_move()
@@ -53,15 +54,29 @@ for i in range(LSTM_LEN):
     #print(i)
     action = np.random.choice(n_actions)
     env.band_ser_cat = action_space[action]
+
+    if i == 5:
+        stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
+        stats[np.where((env.UE_cat == 'embb') & (env.UE_cell == 1))] = 2
+        stats[np.where((env.UE_cat == 'urllc') & (env.UE_cell == 1))] = 3
+
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            rate = env.provisioning()
+            rates[:,i_subframe] = rate
+            # print(env.sys_clock)
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
+        np.savetxt('cosa.txt', rates)
+        np.savetxt('code.txt', stats)   
     
-    for i_subframe in range(LEARNING_WINDOW):
-        env.scheduling()
-        env.provisioning()
-        if i_subframe < LEARNING_WINDOW - 1:
-            env.activity()
-    stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
-    stats[np.where((env.UE_cat == 'embb') & (env.UE_cell == 1))] = 2
-    stats[np.where((env.UE_cat == 'urllc') & (env.UE_cell == 1))] = 3
+    else:
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            env.provisioning()
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
+
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
     buffer_ob.append(observe)
