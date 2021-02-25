@@ -18,10 +18,10 @@ BAND_PER = 0.2  # M
 DL_MIMO = 64
 SER_CAT = ['volte', 'embb_general', 'urllc']
 
-LR_A = 0.002
-LR_C = 0.01
+LR_A = 0.005
+LR_C = 0.008
 GAMMA = 0
-ENTROY_BETA = 0.001
+ENTROY_BETA = 0.01
 LSTM_LEN = 10
 MAX_ITERATIONS = 10000
 
