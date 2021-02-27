@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pdb
 import tensorflow as tf
 import copy
 import os
@@ -24,7 +25,7 @@ GAMMA = 0
 ENTROY_BETA = 0.001
 LSTM_LEN = 10
 MAX_ITERATIONS = 10000
-
+Queue_max = 5
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
 
@@ -40,12 +41,14 @@ env = EnvMove(UE_max_no=UE_NUMS, ser_prob=np.array(SER_PROB, dtype=np.float32), 
 
 qoe_lst, se_lst = [], []
 reward_lst = []
-
+Niter = 50
 buffer_ob = []
 rate_accum = []
 rate_accum = np.array(rate_accum)
 rates = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) #I've set it as ones as the rate can be 0
+BW = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) 
 stats = np.zeros(UE_NUMS, dtype = np.float32)
+buffers = np.zeros((Queue_max, UE_NUMS * Niter), dtype=np.float32) 
 # print(np.where(env.UE_cat == 'volte'))
 for i in range(LSTM_LEN):
     env.countReset()
@@ -57,15 +60,17 @@ for i in range(LSTM_LEN):
     env.band_ser_cat = action_space[action]
 
     for i_subframe in range(LEARNING_WINDOW):
+        #print("LEARNING FRAME IS")
+        #print(i_subframe)
         env.scheduling()
         env.provisioning()
+        #print(env.UE_buffer.shape)       
         if i_subframe < LEARNING_WINDOW - 1:
             env.activity()
-
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)
     buffer_ob.append(observe)
-
+	
 for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
@@ -85,11 +90,39 @@ for i_iter in range(MAX_ITERATIONS):
             env.scheduling()
             rate = env.provisioning()
             rates[:,i_subframe] = rate
+            BW[:,i_subframe] = env.UE_band
             # print(env.sys_clock)
             if i_subframe < LEARNING_WINDOW - 1:
                 env.activity()
+                if i_subframe < Niter:
+                    print("COSA")
+                    #pdb.set_trace()
+
+                    UE_index = np.where((env.UE_cell == 1) &
+                                        (env.UE_buffer[0, :] != 0))[0]
+                    print("UE index is")
+                    #buffers[:,(i_subframe - 1) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]
+                    buffers[:,(i_subframe) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]   
+                    print(UE_index)
+                    print(i_subframe)  
+                    print(buffers[:,UE_index])
+                    #print(buffers[:,UE_index, 1])
+                    print(buffers.shape)
+                    print((i_subframe) * UE_NUMS + UE_index)
+                    test = buffers.reshape((buffers.shape[0], -1))
+                    #aux = np.where(test == buffers[0,UE_index[0], 0])
+                    print("Test shape is")
+                    #print(test.shape)
+                    print((i_subframe) * UE_NUMS + UE_index)
+                    print(buffers[:,[(i_subframe) * UE_NUMS + UE_index]])
+                    #print(test[:,[(i_subframe) * UE_NUMS + UE_index]])
+                    #np.savetxt('buffers.txt', buffers)
+                elif i_subframe == Niter:
+                    np.savetxt('buffers.txt', buffers)               
+ 
         np.savetxt('cosa.txt', rates)
-        np.savetxt('code.txt', stats)   
+        np.savetxt('code.txt', stats)
+        np.savetxt('bandwidth.txt', BW)   
     
     else:
         for i_subframe in range(LEARNING_WINDOW):

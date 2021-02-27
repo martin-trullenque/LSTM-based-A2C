@@ -145,7 +145,7 @@ class EnvMove(object):
             RB_total = 0
             if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000): #To sum up with this horrible line of code: if this is the first scheduling we do the line below
                 self.ser_schedu_ind = [0] * ser_cat #This line of code creates an array of zeros of size ser_cat (3)
-                #print("this is a test")
+
             for i in range(ser_cat):
                 #For each user I look whether it is within the cell. And, it must not have an empty queue. And it is inside a for to check all users categories, hopefully to consider different SLA's parameters
                 ##-----------------------------------------------------------------
@@ -156,7 +156,9 @@ class EnvMove(object):
                 UE_Active_No = len(UE_index) #Number of active users for a given category
 
                 #print(self.ser_cat[i])
-                #print("Number of active users")
+                #print("Active users")
+                #print(UE_index)
+                #print(self.UE_buffer[:, UE_index])
                 #print(UE_Active_No) #TODO: run a simulation with 0 users
                 
 
@@ -190,7 +192,7 @@ class EnvMove(object):
                         UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
                         self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
                         self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
-            #print(RB_total)
+            #print(self.UE_buffer[:, UE_index])
         elif self.schedu_method == 'round_robin_nons':
             band_whole = self.band_whole
             if self.sys_clock == self.time_subframe:
