@@ -255,9 +255,9 @@ class EnvMove(object):
                     self.UE_buffer[buf_ind, ue_id] = 40 * 8
                     self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                 elif self.UE_cat[ue_id] == 'embb_general':
-                    tmp_buffer_size = np.random.pareto(1.2, 1) * 800
-                    if tmp_buffer_size > 2000:
-                        tmp_buffer_size = 2000
+                    tmp_buffer_size = np.random.pareto(1.2, 1) * 40000
+                    if tmp_buffer_size > 25000:
+                        tmp_buffer_size = 25000
                     # tmp_buffer_size = np.random.choice([1*8*10**6, 2*8*10**6, 3*8*10**6, 4*8*10**6, 5*8*10**6])
                     self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
                     self.UE_readtime[ue_id] = np.random.pareto(1.2, [1, 1]) * 6 * 10 ** -3
@@ -343,7 +343,7 @@ class EnvMove(object):
                         cat_index = self.ser_cat.index('embb_general')
                         if (self.UE_latency[i, ue_id] == self.time_subframe):
                             # if (rate[ue_id] >= 5 * 10 ** 6) & (self.UE_latency[i,ue_id] < 10 * 10 **(-3) - handling_latency):
-                            if (rate[ue_id] >= 400 * 10 ** 6) & (
+                            if (rate[ue_id] >= 100 * 10 ** 6) & (
                                     self.UE_latency[i, ue_id] < 10 * 10 ** (-3) - handling_latency):
                                 self.succ_tx_pkt_no[cat_index] += 1
                         else:
