@@ -12,7 +12,7 @@ np.random.seed(1)
 class EnvMove(object):
     def __init__(self,
                  BS_pos=np.array([0, 0]),
-                 BS_radius=40, ##-----
+                 BS_radius=15, ##-----
                  # BS_tx_power = 0, #unit is dBW
                  BS_tx_power=16,  # unit is dBW, 46dBm
                  UE_max_no=1000,    ##-----
@@ -255,9 +255,9 @@ class EnvMove(object):
                     self.UE_buffer[buf_ind, ue_id] = 40 * 8
                     self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                 elif self.UE_cat[ue_id] == 'embb_general':
-                    tmp_buffer_size = np.random.pareto(1.2, 1) * 800
-                    if tmp_buffer_size > 2000:
-                        tmp_buffer_size = 2000
+                    tmp_buffer_size = np.random.pareto(1.2, 1) * 40000
+                    if tmp_buffer_size > 25000:
+                        tmp_buffer_size = 25000
                     # tmp_buffer_size = np.random.choice([1*8*10**6, 2*8*10**6, 3*8*10**6, 4*8*10**6, 5*8*10**6])
                     self.UE_buffer[buf_ind, ue_id] = tmp_buffer_size
                     self.UE_readtime[ue_id] = np.random.pareto(1.2, [1, 1]) * 6 * 10 ** -3
