@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 
 import numpy as np
@@ -18,12 +19,12 @@ BAND_PER = 0.2  # M
 DL_MIMO = 64
 SER_CAT = ['volte', 'embb_general', 'urllc']
 
-LR_A = 0.002
-LR_C = 0.01
+LR_A = 0.005
+LR_C = 0.008
 GAMMA = 0
 ENTROY_BETA = 0.001
 LSTM_LEN = 10
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 12000
 
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
@@ -67,9 +68,21 @@ for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
     env.activity()
+    if i_iter == 5000:
+        env.ser_prob = np.array([0.46, 0.46, 0.08], dtype = np.float32)
+        env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
+        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
+        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
+        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
 
+    if i_iter == 7500:
+        env.ser_prob = np.array([1/6, 2/6, 0.5], dtype = np.float32)
+        env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
+        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
+        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
+        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
     s = np.vstack(buffer_ob)
-    action = model.choose_action(s)
+    action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
 
     for i_subframe in range(LEARNING_WINDOW):
@@ -107,11 +120,13 @@ for i_iter in range(MAX_ITERATIONS):
 
     model.learn(feed_dict)
 
-    if (i_iter + 1) % 500 == 0:
+    if (i_iter + 1) % 1 == 0:
         with open(LOG_TRAIN, 'a+') as f:
             for i in range(len(se_lst)):
                 print(
                     'Reward: %.4f, SE: %.4f, QoE_volte: %.4f, QoE_embb: %.4f, QoE_urllc: %.4f' % (
                         reward_lst[i], se_lst[i], qoe_lst[i][0], qoe_lst[i][1], qoe_lst[i][2]), file=f)
+            print('State slice 1: %.4f, State slice 2: %.4f, State slice 3: %.4f, Action slice 1: %.4f, Action slice 2: %.4f, Action slice 3: %.4f' % (observe[0], observe[1], observe[2], env.band_ser_cat[0], env.band_ser_cat[1], env.band_ser_cat[2]), file=f)
+            np.savetxt(f, probab)
         qoe_lst, se_lst = [], []
         reward_lst = []
