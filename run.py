@@ -19,12 +19,12 @@ BAND_PER = 0.2  # M
 DL_MIMO = 64
 SER_CAT = ['volte', 'embb_general', 'urllc']
 
-LR_A = 0.005
-LR_C = 0.008
+LR_A = 0.002
+LR_C = 0.01
 GAMMA = 0
 ENTROY_BETA = 0.001
 LSTM_LEN = 10
-MAX_ITERATIONS = 8000
+MAX_ITERATIONS = 10000
 
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
@@ -68,12 +68,12 @@ for i_iter in range(MAX_ITERATIONS):
     env.countReset()
     env.user_move()
     env.activity()
-    if i_iter == 4000:
-        env.ser_prob = np.array([0.46, 0.46, 0.08], dtype = np.float32)
-        env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
-        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
-        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
-        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
+ #   if i_iter == 4000:
+ #       env.ser_prob = np.array([0.46, 0.46, 0.08], dtype = np.float32)
+ #       env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
+ #       env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
+ #       env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
+ #       env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
 
     s = np.vstack(buffer_ob)
     action, probab = model.choose_action(s)
