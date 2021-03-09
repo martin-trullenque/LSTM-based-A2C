@@ -65,7 +65,7 @@ for i in range(LSTM_LEN):
     buffer_ob.append(observe)
 
 for i_iter in range(MAX_ITERATIONS):
-    env.countReset()
+    env.countReset() #Shortening the learning window should be more than enough
     env.user_move()
     env.activity()
 #    if i_iter == 5000:

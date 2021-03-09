@@ -140,6 +140,12 @@ class EnvMove(object):
         if self.schedu_method == 'round_robin':
             ser_cat = len(self.ser_cat)
             band_ser_cat = self.band_ser_cat
+            print("Learning windows")
+            print(self.sys_clock * 10000)      
+            print(self.learning_windows * 10000)
+            print(self.time_subframe * 10000)
+            print((self.sys_clock * 10000) % (self.learning_windows * 10000))
+            # We go inside teh conditional if we are in the first iteration
             if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000):
                 self.ser_schedu_ind = [0] * ser_cat
 
@@ -231,6 +237,7 @@ class EnvMove(object):
         # embb_general uses the video streaming model
         # urllc uses the FTP2 model
         if self.sys_clock == 0:
+            print("New iteration")
             for ser_name in self.ser_cat:
                 ue_index = np.where((self.UE_cat == ser_name) & (self.UE_cell == 1))
                 ue_index_Size = ue_index[0].size
