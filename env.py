@@ -12,7 +12,7 @@ np.random.seed(1)
 class EnvMove(object):
     def __init__(self,
                  BS_pos=np.array([0, 0]),
-                 BS_radius=15, ##-----
+                 BS_radius=40, ##-----
                  # BS_tx_power = 0, #unit is dBW
                  BS_tx_power=16,  # unit is dBW, 46dBm
                  UE_max_no=1000,    ##-----

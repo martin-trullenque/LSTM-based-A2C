@@ -14,7 +14,7 @@ import utils
 UE_NUMS = 1200
 SER_PROB = [1, 2, 3]
 LEARNING_WINDOW = 2000
-BAND_WHOLE = 10  # M
+BAND_WHOLE = 4  # M
 BAND_PER = 0.2  # M
 DL_MIMO = 64
 SER_CAT = ['volte', 'embb_general', 'urllc']
