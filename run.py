@@ -14,6 +14,7 @@ import utils
 UE_NUMS = 1200
 SER_PROB = [1, 2, 3]
 LEARNING_WINDOW = 200
+ORIGINAL_LW = 2000
 BAND_WHOLE = 10  # M
 BAND_PER = 0.2  # M
 DL_MIMO = 64
@@ -23,16 +24,21 @@ LR_A = 0.005
 LR_C = 0.008
 GAMMA = 0
 ENTROY_BETA = 0.001
-LSTM_LEN = 10
+LSTM_ORIGINAL = 10
+LSTM_LEN = int(10 / (LEARNING_WINDOW/ORIGINAL_LW))
 MAX_ITERATIONS = 12000
 
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
+buf_test = np.arange(300).reshape(100, 3)
+dec_buffer = utils.compress_buffer(buf_test, LSTM_ORIGINAL)
+
+
 
 action_space = utils.action_space(int(BAND_WHOLE // BAND_PER), len(SER_CAT)) * BAND_PER * 10 ** 6
 n_actions = len(action_space)
 print(n_actions)
-
+print(LSTM_LEN)
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 sess = tf.Session(config=config)
@@ -64,16 +70,17 @@ for i in range(LSTM_LEN):
     observe = utils.gen_state(pkt)
     buffer_ob.append(observe)
 
+
 for i_iter in range(MAX_ITERATIONS):
     env.countReset() #Shortening the learning window should be more than enough
     env.user_move()
     env.activity()
-    if i_iter == 8000:
-        env.ser_prob = np.array([0.46, 0.46, 0.08], dtype = np.float32)
-        env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
-        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
-        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
-        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
+#    if i_iter == 8000:
+#        env.ser_prob = np.array([0.46, 0.46, 0.08], dtype = np.float32)
+#        env.UE_cat = np.random.choice(env.ser_cat, env.UE_max_no, p=env.ser_prob)
+#        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
+#        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
+#        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
 
 #    if i_iter == 7500:
 #        env.ser_prob = np.array([1/6, 2/6, 0.5], dtype = np.float32)
@@ -81,7 +88,8 @@ for i_iter in range(MAX_ITERATIONS):
 #        env.UE_speed[np.where(env.UE_cat == 'volte')] = 1
 #        env.UE_speed[np.where(env.UE_cat == 'embb_general')] = 4
 #        env.UE_speed[np.where(env.UE_cat == 'urllc')] = 8
-    s = np.vstack(buffer_ob)
+#    s = np.vstack(buffer_ob)
+    s = np.vstack(utils.compress_buffer(buffer_ob, LSTM_ORIGINAL))
     action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
 
@@ -95,7 +103,7 @@ for i_iter in range(MAX_ITERATIONS):
     observe = utils.gen_state(pkt)
     buffer_ob.pop(0)
     buffer_ob.append(observe)
-    s_ = np.vstack(buffer_ob)
+    s_ = np.vstack(utils.compress_buffer(buffer_ob, LSTM_ORIGINAL))
 
     qoe, se = env.get_reward()
     qoe_lst.append(qoe.tolist())

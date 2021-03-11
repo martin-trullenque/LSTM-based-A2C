@@ -48,3 +48,12 @@ def calc__reward(qoe, se):
 
     return uility, reward
 
+def compress_buffer(buf, output_len):
+    decimating = int(len(buf)/output_len)
+    output_buf = np.ones((output_len, 3), dtype = np.float32)
+
+    for i in range(output_len):
+        output_buf[i] = np.sum((buf[(i * decimating):((i + 1) * decimating)]), axis = 0, dtype=np.float32)
+
+    return output_buf
+
