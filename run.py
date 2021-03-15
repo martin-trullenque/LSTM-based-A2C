@@ -12,7 +12,7 @@ import utils
 # SE_WEIGHT = 0.01
 UE_NUMS = 1200
 SER_PROB = [1, 2, 3]
-LEARNING_WINDOW = 2000
+LEARNING_WINDOW = 200
 BAND_WHOLE = 10  # M
 BAND_PER = 0.2  # M
 DL_MIMO = 64
@@ -44,6 +44,16 @@ qoe_lst, se_lst = [], []
 reward_lst = []
 
 buffer_ob = []
+Queue_max = 5
+Niter = 100
+buffer_ob = []
+rate_accum = []
+rate_accum = np.array(rate_accum)
+rates = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) #I've set it as ones as the rate can be 0
+BW = np.ones((UE_NUMS, LEARNING_WINDOW), dtype=np.float32) 
+stats = np.zeros(UE_NUMS, dtype = np.float32)
+buffers = np.zeros((Queue_max, UE_NUMS * Niter), dtype=np.float32) 
+
 
 for i in range(LSTM_LEN):
     env.countReset()
@@ -72,11 +82,57 @@ for i_iter in range(MAX_ITERATIONS):
     action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
 
-    for i_subframe in range(LEARNING_WINDOW):
-        env.scheduling()
-        env.provisioning()
-        if i_subframe < LEARNING_WINDOW - 1:
-            env.activity()
+    if i_iter == 6000:
+
+        stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
+        stats[np.where((env.UE_cat == 'embb_general') & (env.UE_cell == 1))] = 2
+
+        stats[np.where((env.UE_cat == 'urllc') & (env.UE_cell == 1))] = 3
+
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            rate = env.provisioning()
+            rates[:,i_subframe] = rate
+            BW[:,i_subframe] = env.UE_band
+            # print(env.sys_clock)
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
+                if i_subframe < Niter:
+                    print("COSA")
+                    #pdb.set_trace()
+
+                    UE_index = np.where((env.UE_cell == 1) &
+                                        (env.UE_buffer[0, :] != 0))[0]
+                    print("UE index is")
+                    #buffers[:,(i_subframe - 1) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]
+                    buffers[:,(i_subframe) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]   
+                    print(UE_index)
+                    print(i_subframe)  
+                    print(buffers[:,UE_index])
+                    #print(buffers[:,UE_index, 1])
+                    print(buffers.shape)
+                    print((i_subframe) * UE_NUMS + UE_index)
+                    test = buffers.reshape((buffers.shape[0], -1))
+                    #aux = np.where(test == buffers[0,UE_index[0], 0])
+                    print("Test shape is")
+                    #print(test.shape)
+                    print((i_subframe) * UE_NUMS + UE_index)
+                    print(buffers[:,[(i_subframe) * UE_NUMS + UE_index]])
+                    #print(test[:,[(i_subframe) * UE_NUMS + UE_index]])
+                    #np.savetxt('buffers.txt', buffers)
+                elif i_subframe == Niter:
+                    np.savetxt('buffers.txt', buffers)               
+ 
+        np.savetxt('cosa.txt', rates)
+        np.savetxt('code.txt', stats)
+        np.savetxt('bandwidth.txt', BW)   
+    
+    else:
+        for i_subframe in range(LEARNING_WINDOW):
+            env.scheduling()
+            env.provisioning()
+            if i_subframe < LEARNING_WINDOW - 1:
+                env.activity()
 
     pkt, dis = env.get_state()
     observe = utils.gen_state(pkt)

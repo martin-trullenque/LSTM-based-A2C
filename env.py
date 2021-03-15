@@ -276,6 +276,7 @@ class EnvMove(object):
         self.store_reward(rate)
 
         self.bufferClear()
+        return rate
 
     def activity(self):  # https://www.ngmn.org/fileadmin/user_upload/NGMN_Radio_Access_Performance_Evaluation_Methodology.pdf
         # VoLTE uses the VoIP model
