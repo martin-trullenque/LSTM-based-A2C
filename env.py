@@ -207,6 +207,57 @@ class EnvMove(object):
                         lw = (self.learning_windows * 10000) / (self.time_subframe * 10000)
                         self.band_ser_cat[i] = self.band_ser_cat[i] / lw
 
+        elif self.schedu_method == 'packet_size_rr':
+            #print("Hola")
+            ser_cat = len(self.ser_cat)
+            band_ser_cat = self.band_ser_cat
+            if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000):
+                self.ser_schedu_ind = [0] * ser_cat
+
+            for i in range(ser_cat):
+
+                ##-----------------------------------------------------------------
+                UE_index = np.where((self.UE_cell == 1) &
+                                    (self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))[0]
+                ##---------------------------------------------------------------##
+                buffer_state = [0] * (len(UE_index))
+                # = self.UE_buffer[0, :]
+                cosa = self.UE_buffer[0,np.where((self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))]
+                #print(self.ser_cat[i])
+                #print(UE_index)
+                #print(cosa)
+                UE_Active_No = len(UE_index)
+                if UE_Active_No != 0:
+                    num_bits = np.sum(cosa)
+                    #print(self.UE_band[UE_index])
+                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)
+                    #print(RB_No)
+                    #print("Num bits is: ")
+                    #print(num_bits)
+                    #I should add in here the packet size scheduler
+                    RB_round = (RB_No * cosa) // num_bits
+                    #print ("RB round is")
+                    #print(RB_round)
+                    self.UE_band[UE_index] = (180 * 10 ** 3) * ((RB_No * cosa) // num_bits)
+                    #print("Allocated BW is: ")
+                    #print(self.UE_band[UE_index])
+                    used_RB = np.sum(RB_round)
+                    
+                    RB_rem_no = int(RB_No - used_RB)
+                    left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
+                    if left_no >= RB_rem_no:
+                        UE_act_index = UE_index[np.where(np.greater_equal(UE_index, self.ser_schedu_ind[i]))]
+                        UE_act_index = UE_act_index[:RB_rem_no]
+                        if UE_act_index.size != 0:
+                            self.UE_band[UE_act_index] += 180 * 10 ** 3
+                            self.ser_schedu_ind[i] = UE_act_index[-1] + 1
+                    else:
+                        UE_act_index_par1 = UE_index[np.where(UE_index > self.ser_schedu_ind[i])]
+                        UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
+                        self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
+                        self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
+
+
     def provisioning(self):
         UE_index = np.where(self.UE_band != 0)
         self.channel_model()
@@ -255,7 +306,7 @@ class EnvMove(object):
                     self.UE_buffer[buf_ind, ue_id] = 40 * 8
                     self.UE_readtime[ue_id] = np.random.uniform(0, 160 * 10 ** (-3), 1)
                 elif self.UE_cat[ue_id] == 'embb_general':
-                    tmp_buffer_size = np.random.pareto(1.2, 1) * 800
+                    tmp_buffer_size = int(np.random.pareto(1.2, 1) * 800)
                     if tmp_buffer_size > 2000:
                         tmp_buffer_size = 2000
                     # tmp_buffer_size = np.random.choice([1*8*10**6, 2*8*10**6, 3*8*10**6, 4*8*10**6, 5*8*10**6])

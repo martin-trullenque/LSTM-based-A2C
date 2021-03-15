@@ -121,7 +121,7 @@ class A2CLSTM(object):
     def choose_action(self, s):
         probs = self.sess.run(self.acts_prob, feed_dict={self.s: s})  # get probabilities for all actions
         a = np.random.choice(np.arange(probs.shape[1]), p=probs.ravel())
-        return a
+        return a, probs
 
     def learn(self, feed_dict):
         self.sess.run([self.a_train_op, self.c_train_op], feed_dict=feed_dict)
