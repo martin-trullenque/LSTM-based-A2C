@@ -35,6 +35,8 @@ def calc__reward(qoe, se):
     qoe_weight = [1, 1, 1]
     se_weight = 0.01
     uility = sum([w * q for w, q in zip(qoe_weight, qoe.tolist())]) + se_weight * se
+    #print(qoe[1])
+    #print(qoe[0])
     if qoe[1] >= 0.98 and qoe[0] >= 0.98:
         if qoe[2] >= 0.95:
             if se < 280:

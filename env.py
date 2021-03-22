@@ -208,7 +208,6 @@ class EnvMove(object):
                         self.band_ser_cat[i] = self.band_ser_cat[i] / lw
 
         elif self.schedu_method == 'packet_size_rr':
-            #print("Hola")
             ser_cat = len(self.ser_cat)
             band_ser_cat = self.band_ser_cat
             if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000):
@@ -221,29 +220,20 @@ class EnvMove(object):
                                     (self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))[0]
                 ##---------------------------------------------------------------##
                 buffer_state = [0] * (len(UE_index))
-                # = self.UE_buffer[0, :]
-                cosa = self.UE_buffer[0,np.where((self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))]
-                #print(self.ser_cat[i])
-                #print(UE_index)
-                #print(cosa)
+                transmit_bits = [0] * (len(UE_index))
+                transmit_bits = self.UE_buffer[0,np.where((self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))] #Very subtile detail: If I am in the cell I generate a packet. SHOULD BE MODIFIED
                 UE_Active_No = len(UE_index)
                 if UE_Active_No != 0:
-                    num_bits = np.sum(cosa)
-                    #print(self.UE_band[UE_index])
+                    used_RB = 0
+                    num_bits = np.sum(transmit_bits)
                     RB_No = band_ser_cat[i] // (180 * 10 ** 3)
-                    #print(RB_No)
-                    #print("Num bits is: ")
-                    #print(num_bits)
+                    self.UE_band[UE_index] += (180 * 10 ** 3) * min(1,RB_No // UE_Active_No)
+                    used_RB += UE_Active_No * min(1,RB_No // UE_Active_No)   
                     #I should add in here the packet size scheduler
-                    RB_round = (RB_No * cosa) // num_bits
-                    #print ("RB round is")
-                    #print(RB_round)
-                    self.UE_band[UE_index] = (180 * 10 ** 3) * ((RB_No * cosa) // num_bits)
-                    #print("Allocated BW is: ")
-                    #print(self.UE_band[UE_index])
-                    used_RB = np.sum(RB_round)
-                    
+                    self.UE_band[UE_index] += (180 * 10 ** 3) * np.ravel((((RB_No-used_RB) * transmit_bits) // num_bits))
+                    used_RB += np.sum(((RB_No-used_RB) * transmit_bits) // num_bits)                    
                     RB_rem_no = int(RB_No - used_RB)
+                    #print("Remaining number", RB_rem_no)
                     left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
                     if left_no >= RB_rem_no:
                         UE_act_index = UE_index[np.where(np.greater_equal(UE_index, self.ser_schedu_ind[i]))]
@@ -251,11 +241,15 @@ class EnvMove(object):
                         if UE_act_index.size != 0:
                             self.UE_band[UE_act_index] += 180 * 10 ** 3
                             self.ser_schedu_ind[i] = UE_act_index[-1] + 1
+                            used_RB += len(UE_act_index)
                     else:
                         UE_act_index_par1 = UE_index[np.where(UE_index > self.ser_schedu_ind[i])]
                         UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
                         self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
                         self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
+                        used_RB += len(UE_act_index_par1) + len(UE_act_index_par2)
+                    if (RB_No - used_RB) != 0:
+                        print("Missmatch between PRB")
 
 
     def provisioning(self):

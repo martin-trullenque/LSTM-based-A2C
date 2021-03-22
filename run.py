@@ -7,6 +7,7 @@ import os
 from a2c_lstm import A2CLSTM
 from env import EnvMove
 import utils
+import pdb
 
 # QoE_WEIGHT = [1, 1, 1]
 # SE_WEIGHT = 0.01
@@ -23,7 +24,7 @@ LR_C = 0.008
 GAMMA = 0
 ENTROY_BETA = 0.001
 LSTM_LEN = 10
-MAX_ITERATIONS = 10000
+MAX_ITERATIONS = 8000
 
 LOG_TRAIN = './logs/a2clstm.txt'
 # LOG_TRAIN = './logs/a2c.txt'
@@ -45,7 +46,7 @@ reward_lst = []
 
 buffer_ob = []
 Queue_max = 5
-Niter = 100
+Niter = 200
 buffer_ob = []
 rate_accum = []
 rate_accum = np.array(rate_accum)
@@ -62,7 +63,7 @@ for i in range(LSTM_LEN):
 
     action = np.random.choice(n_actions)
     env.band_ser_cat = action_space[action]
-
+    #print("New Iteration")
     for i_subframe in range(LEARNING_WINDOW):
         env.scheduling()
         env.provisioning()
@@ -82,7 +83,7 @@ for i_iter in range(MAX_ITERATIONS):
     action, probab = model.choose_action(s)
     env.band_ser_cat = action_space[action]
 
-    if i_iter == 6000:
+    if i_iter < 6000:
 
         stats[np.where((env.UE_cat == 'volte') & (env.UE_cell == 1))] = 1
         stats[np.where((env.UE_cat == 'embb_general') & (env.UE_cell == 1))] = 2
@@ -98,31 +99,31 @@ for i_iter in range(MAX_ITERATIONS):
             if i_subframe < LEARNING_WINDOW - 1:
                 env.activity()
                 if i_subframe < Niter:
-                    print("COSA")
+                    #print("COSA")
                     #pdb.set_trace()
 
                     UE_index = np.where((env.UE_cell == 1) &
                                         (env.UE_buffer[0, :] != 0))[0]
-                    print("UE index is")
+                    #print("UE index is")
                     #buffers[:,(i_subframe - 1) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]
                     buffers[:,(i_subframe) * UE_NUMS + UE_index] = env.UE_buffer[:,UE_index]   
-                    print(UE_index)
-                    print(i_subframe)  
-                    print(buffers[:,UE_index])
+                    #print(UE_index)
+                    #print(i_subframe)  
+                    #print(buffers[:,UE_index])
                     #print(buffers[:,UE_index, 1])
-                    print(buffers.shape)
-                    print((i_subframe) * UE_NUMS + UE_index)
+                    #print(buffers.shape)
+                    #print((i_subframe) * UE_NUMS + UE_index)
                     test = buffers.reshape((buffers.shape[0], -1))
                     #aux = np.where(test == buffers[0,UE_index[0], 0])
-                    print("Test shape is")
+                    #print("Test shape is")
                     #print(test.shape)
-                    print((i_subframe) * UE_NUMS + UE_index)
-                    print(buffers[:,[(i_subframe) * UE_NUMS + UE_index]])
+                    #print((i_subframe) * UE_NUMS + UE_index)
+                    #print(buffers[:,[(i_subframe) * UE_NUMS + UE_index]])
                     #print(test[:,[(i_subframe) * UE_NUMS + UE_index]])
                     #np.savetxt('buffers.txt', buffers)
-                elif i_subframe == Niter:
-                    np.savetxt('buffers.txt', buffers)               
- 
+                # elif i_subframe == Niter:
+                                   
+        np.savetxt('buffers.txt', buffers)
         np.savetxt('cosa.txt', rates)
         np.savetxt('code.txt', stats)
         np.savetxt('bandwidth.txt', BW)   
@@ -148,10 +149,12 @@ for i_iter in range(MAX_ITERATIONS):
     reward_lst.append(reward)
 
     print('\nStep-%d' % i_iter)
+    print('Action chosen: ', env.band_ser_cat)
     print('qoe: ', qoe)
     print('se: ', se[0])
     print('reward: ', reward)
 
+    #pdb.set_trace()
     v_s_ = model.target_v(s_)
     td_target = reward + GAMMA * v_s_
 
