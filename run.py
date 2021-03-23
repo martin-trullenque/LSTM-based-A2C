@@ -55,7 +55,7 @@ for i in range(LSTM_LEN):
 
     for i_subframe in range(LEARNING_WINDOW):
         env.scheduling()
-        env.provisioning()
+        #env.provisioning()
         if i_subframe < LEARNING_WINDOW - 1:
             env.activity()
 

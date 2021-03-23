@@ -274,12 +274,11 @@ class EnvMove(object):
                 UE_index = np.where((self.UE_cell == 1) &
                                     (self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))[0]
                 ##---------------------------------------------------------------##
-                rate[UE_index] = self.UE_band[UE_index] * np.log10(
-                    1 + rx_power[UE_index] / (10 ** (self.noise_PSD / 10) * self.UE_band[UE_index])) * self.dl_mimo
+
                 UE_Active_No = len(UE_index)
                 if UE_Active_No != 0:
                     RB_No = band_ser_cat[i] // (180 * 10 ** 3)
-                    RB_round = RB_No // UE_Active_No
+
                     RB_rem_no = int(RB_No)
                     left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
                     if left_no >= RB_rem_no:
@@ -287,17 +286,24 @@ class EnvMove(object):
                         UE_act_index = UE_act_index[:RB_rem_no]
                         if UE_act_index.size != 0:
                             self.UE_band[UE_act_index] += 180 * 10 ** 3
+                            rate[UE_act_index] = self.UE_band[UE_act_index] * np.log10(
+                                1 + rx_power[UE_act_index] / (10 ** (self.noise_PSD / 10) * self.UE_band[UE_act_index])) * self.dl_mimo
                             self.ser_schedu_ind[i] = UE_act_index[-1] + 1
                     else:
                         UE_act_index_par1 = UE_index[np.where(UE_index > self.ser_schedu_ind[i])]
                         UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
                         self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
+                        rate[np.hstack((UE_act_index_par1, UE_act_index_par2))] = self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] * np.log10(
+                            1 + rx_power[np.hstack((UE_act_index_par1, UE_act_index_par2))] / (10 ** (self.noise_PSD / 10) * self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))])) * self.dl_mimo
                         self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
 
             self.UE_latency[np.where(self.UE_buffer != 0)] += self.time_subframe
-#TO BE ADDED
+            self.store_reward(rate)
+            self.bufferClear()
+#TO BE ADDED (we update each user buffer)
 #        for ue_id in UE_index[0]:
-#            self.UE_buffer[:, ue_id] = bufferUpdate(self.UE_buffer[:, ue_id], rate[ue_id], self.time_subframe)         
+#            self.UE_buffer[:, ue_id] = bufferUpdate(self.UE_buffer[:, ue_id], rate[ue_id], self.time_subframe)
+         
 
 
     def provisioning(self):
