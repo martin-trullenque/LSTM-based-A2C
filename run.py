@@ -12,7 +12,7 @@ import utils
 # SE_WEIGHT = 0.01
 UE_NUMS = 1200
 SER_PROB = [1, 2, 3]
-LEARNING_WINDOW = 200
+LEARNING_WINDOW = 2000
 BAND_WHOLE = 10  # M
 BAND_PER = 0.2  # M
 DL_MIMO = 64
@@ -22,7 +22,7 @@ LR_A = 0.005
 LR_C = 0.008
 GAMMA = 0
 ENTROY_BETA = 0.001
-LSTM_LEN = 1
+LSTM_LEN = 10
 MAX_ITERATIONS = 10000
 
 LOG_TRAIN = './logs/a2clstm.txt'
@@ -38,7 +38,7 @@ sess = tf.Session(config=config)
 
 model = A2CLSTM(sess, n_features=len(SER_CAT), n_actions=n_actions, lr_a=LR_A, lr_c=LR_C, entropy_beta=ENTROY_BETA)
 
-env = EnvMove(UE_max_no=UE_NUMS, schedu_method='round_robin', ser_prob=np.array(SER_PROB, dtype=np.float32), learning_windows=LEARNING_WINDOW, dl_mimo=DL_MIMO)
+env = EnvMove(UE_max_no=UE_NUMS, schedu_method='only_packet_size_rr', ser_prob=np.array(SER_PROB, dtype=np.float32), learning_windows=LEARNING_WINDOW, dl_mimo=DL_MIMO)
 
 qoe_lst, se_lst = [], []
 reward_lst = []

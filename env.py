@@ -257,6 +257,48 @@ class EnvMove(object):
                         self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
                         self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
 
+        if self.schedu_method == 'only_packet_size_rr':
+            self.channel_model()
+            rx_power = 10 ** ((self.BS_tx_power - self.chan_loss + self.UE_rx_gain) / 10)
+            rx_power = rx_power.reshape(1, -1)[0]
+            rate = np.zeros(self.UE_max_no)
+
+            ser_cat = len(self.ser_cat)
+            band_ser_cat = self.band_ser_cat
+            if (self.sys_clock * 10000) % (self.learning_windows * 10000) == (self.time_subframe * 10000):
+                self.ser_schedu_ind = [0] * ser_cat
+
+            for i in range(ser_cat):
+
+                ##-----------------------------------------------------------------
+                UE_index = np.where((self.UE_cell == 1) &
+                                    (self.UE_buffer[0, :] != 0) & (self.UE_cat == self.ser_cat[i]))[0]
+                ##---------------------------------------------------------------##
+                rate[UE_index] = self.UE_band[UE_index] * np.log10(
+                    1 + rx_power[UE_index] / (10 ** (self.noise_PSD / 10) * self.UE_band[UE_index])) * self.dl_mimo
+                UE_Active_No = len(UE_index)
+                if UE_Active_No != 0:
+                    RB_No = band_ser_cat[i] // (180 * 10 ** 3)
+                    RB_round = RB_No // UE_Active_No
+                    RB_rem_no = int(RB_No)
+                    left_no = np.where(UE_index > self.ser_schedu_ind[i])[0].size
+                    if left_no >= RB_rem_no:
+                        UE_act_index = UE_index[np.where(np.greater_equal(UE_index, self.ser_schedu_ind[i]))]
+                        UE_act_index = UE_act_index[:RB_rem_no]
+                        if UE_act_index.size != 0:
+                            self.UE_band[UE_act_index] += 180 * 10 ** 3
+                            self.ser_schedu_ind[i] = UE_act_index[-1] + 1
+                    else:
+                        UE_act_index_par1 = UE_index[np.where(UE_index > self.ser_schedu_ind[i])]
+                        UE_act_index_par2 = UE_index[0:RB_rem_no - left_no]
+                        self.UE_band[np.hstack((UE_act_index_par1, UE_act_index_par2))] += 180 * 10 ** 3
+                        self.ser_schedu_ind[i] = UE_act_index_par2[-1] + 1
+
+            self.UE_latency[np.where(self.UE_buffer != 0)] += self.time_subframe
+#TO BE ADDED
+#        for ue_id in UE_index[0]:
+#            self.UE_buffer[:, ue_id] = bufferUpdate(self.UE_buffer[:, ue_id], rate[ue_id], self.time_subframe)         
+
 
     def provisioning(self):
         UE_index = np.where(self.UE_band != 0)
